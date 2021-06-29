@@ -1,0 +1,130 @@
+组件是一个具有一定功能，且不同组件间功能相对独立的模块，组件可以是一个按钮，一个输入框，一个视频播放器等等。那么如何开发一个可复用的组件呢？
+
+下面去几个问题去分析下如何开发一个可复用的组件
+
+###  1  组件到底是由什么构成的？
+
+```
+<video 
+   src="example.mp4"
+   width="320"
+   height="240"
+   onload="loadHandler"
+   onerror=errorHandler>
+     Your browser does not support the video tag.
+</video>
+```
+
+以原生的video组件举例，组件大概分为三部分。
+
+* 1 状态：指当前组件的某些数据或属性 如width
+
+* 2 事件：指组件在特定的时机触发一些操作的行为，如video在资源加载成功或失败触发对应的时间来执行处理。
+*  3 片段：指的是嵌套在组件标签中的内容，该内容会在某些添加下展现出来，如在浏览器不支持video标签时显示信息。
+
+任何组件基本都可以由上面三个部分构成（某些组件可能只需要其中某些部分）我们再来看看在React开发中，这些部分分别对应啥？
+
+在Vue中 状态是props ，事件是events 片段是slots
+
+在React中，状态也是props 事件也是events  react中没有slots槽的概念，都建议直接用props传递，但也保留了一个特殊的属性children 来传递片段
+
+```
+function FancyBorder(props) {
+  return (
+    <div className={'FancyBorder FancyBorder-' + props.color}>
+      {props.children}
+    </div>
+  );
+}
+
+function WelcomeDialog() {
+  return (
+    <FancyBorder color="blue">
+      <h1 className="Dialog-title">
+        Welcome
+      </h1>
+      <p className="Dialog-message">
+        Thank you for visiting our spacecraft!
+      </p>
+    </FancyBorder>
+  );
+}
+如何需要保留多个槽，我们可以不使用children，而是自行约定，将所需的内容传入props，并使用响应的prop
+function SplitPane(props) {
+  return (
+    <div className="SplitPane">
+      <div className="SplitPane-left">
+        {props.left}
+      </div>
+      <div className="SplitPane-right">
+        {props.right}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <SplitPane
+      left={
+        <Contacts />
+      }
+      right={
+        <Chat />
+      } />
+  );
+}
+```
+
+
+
+所以如果有人要想问你，如何开发一个可复用的组件？你首先得理清楚组件的三要素：状态 事件 片段。
+
+那么如何定义好状态 事件和片段呢？下面这些点都需要考虑
+
+### 2  组件的职责
+
+react中其实有很好的组件职责的划分
+
+* 展示组件：我们把展示组件定位成可复用的组件，不会因为组件的使用的位置，场景，而导致不可用。主要功能包含
+  * UI的展示
+  * 和用户的交互
+  * 动画效果
+* 容器组件：我们把容器组件定位成业务组件（或者自己项目中公用的组件，一次性的组件），依赖你当前项目的配置和使用。主要是为了引用展示组件，主要功能包含
+  * 获取数据，可以通过redux或者axios。
+  * 埋点，上报。
+  * 清洗数据传递给展示组件。
+
+展示组件应尽量减少对外部条件的依赖，尽量达到可以跟当前项目解耦，比如国际化，获取数据方式等都应该通过接口与之交互，来达到各个项目之间无缝引用。
+
+所以说可复用的组件，只负责UI上的展示和一些交互以及动画，如何获取数据跟它无关，因此不要在组件内部去获取数据，以及任何与服务器打交道的操作，可复用组件只实现UI相关的功能。
+
+### 
+
+### 3 组件的命名
+
+* 组件的命名应该跟业务无关，应该根据组件的功能为组件命名，可复用的组件在命名上应避免跟当前的业务扯上关系，以组件的角色功能对其命名。
+* 组件除了需要一个清晰的接口外，还需要命名空间。命名空间可以避免与浏览器保留标签和其他组件的冲突，特别是当项目引用外部UI组件或组件迁移到其他项目时，命名空间可以避免很多命名冲突的问题。
+
+
+
+### 4  数据的扁平化
+
+定义组件接口时，尽量不要将整个对下作为一个props传过来，每个props应该是一个简单类型的数据，
+
+这样做有几个好处
+
+* 组件接口清晰
+* props校验方便
+* 当服务端返回对象中的key名称和组件接口不一样时，不需要重新构造一个新对象
+
+````
+<card
+   title={item.name}
+   description={item.desc}
+   poster={item.img}
+</card>
+````
+
+
+
